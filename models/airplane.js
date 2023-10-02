@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      this.FlightSchedules = this.hasMany(models.FlightSchedule);
     }
   }
   Airplane.init({

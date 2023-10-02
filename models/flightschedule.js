@@ -3,6 +3,8 @@ const {
   Model
 } = require('sequelize');
 
+const { DateTime } = require('luxon');
+
 const availableAirports = [
   'MIA', 'JFK', 'LAX'
 ];
@@ -16,8 +18,11 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      this.Airplane = this.belongsTo(models['Airplane']);
+      this.BoardingTickets = this.hasMany(models['BoardingTicket']);
     }
   }
+  
   FlightSchedule.init({
     originAirport: {
       type: DataTypes.STRING,
@@ -40,6 +45,15 @@ module.exports = (sequelize, DataTypes) => {
           const invalidDestination = this.originAirport === this.destinationAirport;
           if (hasAirportValues && invalidDestination) {
             throw new Error("The destination airport cannot be the same as the origin");
+          }
+        },
+        validateDepartureTime() {
+          const dt = DateTime.fromJSDate(this.departureTime);
+          if (!dt.isValid) {
+            throw new Error('Invalid departure time');
+          }
+          if (dt < DateTime.now()) {
+            throw new Error("The departure time must be set within the future");
           }
         }
       }

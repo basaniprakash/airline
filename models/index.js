@@ -1,5 +1,9 @@
 'use strict';
 
+const { NodeTracerProvider } = require('@opentelemetry/sdk-trace-node');
+const { registerInstrumentations } = require('@opentelemetry/instrumentation');
+const { SequelizeInstrumentation } = require('opentelemetry-instrumentation-sequelize');
+
 const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');
@@ -7,8 +11,27 @@ const process = require('process');
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
 const config = require('./../config/config')[env];
+const logger = require('pino')();
 const db = {};
 
+config.logging = (msg) => logger.info(msg);
+
+const tracerProvider = new NodeTracerProvider( {
+  plugins: {
+    sequelize: {
+      enabled: false,
+      path: 'opentelemetry-plugin-sequelize'
+    }
+  }
+});
+registerInstrumentations({
+  tracerProvider,
+  instrumentations: [
+    new SequelizeInstrumentation({
+      // any custom instrument options here
+    })
+  ]
+});
 let sequelize;
 // if (config.use_env_variable) {
 //   sequelize = new Sequelize(process.env[config.use_env_variable], config);
@@ -27,6 +50,7 @@ fs
     );
   })
   .forEach(file => {
+    // console.log(`__dirname ${__dirname}, file: ${file} dataTypes: ${Sequelize.DataTypes}`);
     const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
     db[model.name] = model;
   });
